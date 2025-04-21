@@ -6,29 +6,59 @@ on:
   pull_request:
     branches: [ main ]
 
-env: 
-  USERNAME: magnesj
-  VCPKG_EXE: ${{ github.workspace }}/vcpkg/vcpkg
-  FEED_URL: https://nuget.pkg.github.com/magnesj/index.json
-  VCPKG_BINARY_SOURCES: "clear;nuget,https://nuget.pkg.github.com/magnesj/index.json,readwrite"
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     
+    runs-on: ${{ matrix.os }}
+
+    env: 
+      USERNAME: magnesj
+      VCPKG_EXE: ${{ github.workspace }}/vcpkg/vcpkg${{ runner.os == 'Windows' && '.exe' || '' }}
+      FEED_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+      VCPKG_BINARY_SOURCES: "clear;nuget,https://nuget.pkg.github.com/magnesj/index.json,readwrite"
+
     steps:
     - uses: actions/checkout@v3
       with:
         submodules: recursive
     
     - name: Bootstrap vcpkg
+      if: runner.os == 'Windows'
       run: |
         cd vcpkg
         ./bootstrap-vcpkg.bat
         echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV
         # sudo apt install mono-complete
 
-    - name: Add NuGet sources
+    - name: Bootstrap vcpkg (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        cd vcpkg
+        ./bootstrap-vcpkg.sh
+        echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV        
+
+    - name: Configure NuGet for binary caching (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        NUGET_EXE=$($(${VCPKG_EXE} fetch nuget))
+        
+        ${NUGET_EXE} sources add \
+          -Source "${FEED_URL}" \
+          -StorePasswordInClearText \
+          -Name GitHubPackages \
+          -UserName "${USERNAME}" \
+          -Password "${{ secrets.GH_PACKAGES_TOKEN }}"
+        
+        ${NUGET_EXE} setapikey "${{ secrets.GH_PACKAGES_TOKEN }}" -Source "${FEED_URL}"
+        
+        echo "VCPKG_BINARY_SOURCES=clear;nuget,${FEED_URL},readwrite" >> $GITHUB_ENV
+
+    - name: Add NuGet sources (Windows)
+      if: runner.os == 'Windows'
       shell: pwsh
       run: |
         .$(${{ env.VCPKG_EXE }} fetch nuget) `
@@ -53,6 +83,12 @@ jobs:
       working-directory: ${{github.workspace}}/build
       run: cmake --build . --config Release
       
-    - name: Run application
+    - name: Run application (Windows)
+      if: runner.os == 'Windows'
       working-directory: ${{github.workspace}}/build
-      run: ./Release/vcpkg-example
+      run: .\Release\vcpkg-example.exe
+      
+    - name: Run application (Linux)
+      if: runner.os == 'Linux'
+      working-directory: ${{github.workspace}}/build
+      run: ./vcpkg-example
