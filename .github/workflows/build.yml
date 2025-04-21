@@ -40,23 +40,21 @@ jobs:
         ./bootstrap-vcpkg.sh
         echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV        
         sudo apt install mono-complete
-
+    
     - name: Configure NuGet for binary caching (Linux)
       if: runner.os == 'Linux'
       run: |
-        NUGET_EXE=$($(${VCPKG_EXE} fetch nuget))
-        
-        ${NUGET_EXE} sources add \
-          -Source "${FEED_URL}" \
+        mono `${{ env.VCPKG_EXE }} fetch nuget | tail -n 1` \
+          sources add \
+          -Source "${{ env.FEED_URL }}" \
           -StorePasswordInClearText \
           -Name GitHubPackages \
-          -UserName "${USERNAME}" \
+          -UserName "${{ env.USERNAME }}" \
           -Password "${{ secrets.GH_PACKAGES_TOKEN }}"
+        mono `${{ env.VCPKG_EXE }} fetch nuget | tail -n 1` \
+          setapikey "${{ secrets.GH_PACKAGES_TOKEN }}" \
+          -Source "${{ env.FEED_URL }}"
         
-        ${NUGET_EXE} setapikey "${{ secrets.GH_PACKAGES_TOKEN }}" -Source "${FEED_URL}"
-        
-        echo "VCPKG_BINARY_SOURCES=clear;nuget,${FEED_URL},readwrite" >> $GITHUB_ENV
-
     - name: Add NuGet sources (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
