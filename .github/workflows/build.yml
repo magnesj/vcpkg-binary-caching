@@ -32,7 +32,6 @@ jobs:
         cd vcpkg
         ./bootstrap-vcpkg.bat
         echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV
-        # sudo apt install mono-complete
 
     - name: Bootstrap vcpkg (Linux)
       if: runner.os == 'Linux'
@@ -40,6 +39,7 @@ jobs:
         cd vcpkg
         ./bootstrap-vcpkg.sh
         echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV        
+        sudo apt install mono-complete
 
     - name: Configure NuGet for binary caching (Linux)
       if: runner.os == 'Linux'
