@@ -18,7 +18,6 @@ jobs:
     - name: Bootstrap vcpkg
       run: |
         cd vcpkg
-        git checkout 501db0f17ef6df184fcdbfbe0f87cde2313b6ab1
         ./bootstrap-vcpkg.sh
         echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV
     
