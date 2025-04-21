@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [ main ]
 
+env: 
+  USERNAME: magnesj
+  VCPKG_EXE: ${{ github.workspace }}/vcpkg/vcpkg
+  FEED_URL: https://nuget.pkg.github.com/magnesj/index.json
+  VCPKG_BINARY_SOURCES: "clear;nuget,https://nuget.pkg.github.com/magnesj/index.json,readwrite"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,16 +26,21 @@ jobs:
         cd vcpkg
         ./bootstrap-vcpkg.sh
         echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV
-    
-    - name: Configure vcpkg binary cache with GitHub Packages
+
+    - name: Add NuGet sources
+      shell: pwsh
       run: |
-        echo "VCPKG_BINARY_SOURCES=clear;nuget,https://nuget.pkg.github.com/magnesj/index.json,readwrite" >> $GITHUB_ENV
-        echo "VCPKG_NUGET_USER=${{ github.repository_owner }}" >> $GITHUB_ENV
-        echo "VCPKG_NUGET_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-        
-        # Initialize NuGet credentials
-        ${{ github.workspace }}/vcpkg/vcpkg x-nuget-init
-    
+        .$(${{ env.VCPKG_EXE }} fetch nuget) `
+          sources add `
+          -Source "${{ env.FEED_URL }}" `
+          -StorePasswordInClearText `
+          -Name GitHubPackages `
+          -UserName "${{ env.USERNAME }}" `
+          -Password "${{ secrets.GH_PACKAGES_TOKEN }}"
+        .$(${{ env.VCPKG_EXE }} fetch nuget) `
+          setapikey "${{ secrets.GH_PACKAGES_TOKEN }}" `
+          -Source "${{ env.FEED_URL }}"
+          
     - name: Create build directory
       run: cmake -E make_directory ${{github.workspace}}/build
       
