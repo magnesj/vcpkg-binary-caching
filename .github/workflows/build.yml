@@ -24,7 +24,7 @@ jobs:
     - name: Bootstrap vcpkg
       run: |
         cd vcpkg
-        ./bootstrap-vcpkg.sh
+        ./bootstrap-vcpkg.bat
         echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV
         # sudo apt install mono-complete
 
