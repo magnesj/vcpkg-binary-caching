@@ -1,0 +1,47 @@
+name: Build with vcpkg binary cache
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    
+    - name: Bootstrap vcpkg
+      run: |
+        cd vcpkg
+        git checkout 501db0f17ef6df184fcdbfbe0f87cde2313b6ab1
+        ./bootstrap-vcpkg.sh
+        echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV
+    
+    - name: Configure vcpkg binary cache with GitHub Packages
+      run: |
+        echo "VCPKG_BINARY_SOURCES=clear;nuget,https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json,readwrite" >> $GITHUB_ENV
+        echo "VCPKG_NUGET_USER=${{ github.repository_owner }}" >> $GITHUB_ENV
+        echo "VCPKG_NUGET_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+        
+        # Initialize NuGet credentials
+        ${{ github.workspace }}/vcpkg/vcpkg x-nuget-init
+    
+    - name: Create build directory
+      run: cmake -E make_directory ${{github.workspace}}/build
+      
+    - name: Configure CMake
+      working-directory: ${{github.workspace}}/build
+      run: cmake ${{github.workspace}} -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+      
+    - name: Build
+      working-directory: ${{github.workspace}}/build
+      run: cmake --build . --config Release
+      
+    - name: Run application
+      working-directory: ${{github.workspace}}/build
+      run: ./vcpkg-example
