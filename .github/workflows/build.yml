@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [ main ]
 
-
 jobs:
   build:
     strategy:
@@ -29,14 +28,12 @@ jobs:
       run: |
         cd vcpkg
         ./bootstrap-vcpkg.bat
-        # echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV
 
     - name: Bootstrap vcpkg (Linux)
       if: runner.os == 'Linux'
       run: |
         cd vcpkg
         ./bootstrap-vcpkg.sh
-        # echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV        
     
     - name: Restore vcpkg cache
       id: vcpkg-cache
