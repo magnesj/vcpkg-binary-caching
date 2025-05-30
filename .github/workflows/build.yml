@@ -33,7 +33,7 @@ jobs:
     
     - name: Restore vcpkg cache
       id: vcpkg-cache
-      uses: magnesj/vcpkg-cache@adef7514f22b4554542a8c5f5f720d3abf305433
+      uses: magnesj/vcpkg-cache@b0cc7d5e9582fda5e32568c65fd09c8737b11479
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         prefix: msj-test-vcpkg-cache
