@@ -18,11 +18,7 @@ jobs:
     - uses: actions/checkout@v3
       with:
         submodules: recursive
-
-    - uses: TAServers/vcpkg-cache@v3
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }} # Used by @actions/github to read the cache entries in your repo prefixed with `vcpkg/`. Couldn't see a way with just `@actions/cache` to pull everything without needing a token        
-    
+   
     - name: Bootstrap vcpkg
       if: runner.os == 'Windows'
       run: |
@@ -37,9 +33,10 @@ jobs:
     
     - name: Restore vcpkg cache
       id: vcpkg-cache
-      uses: TAServers/vcpkg-cache@v3
+      uses: magnesj/vcpkg-cache@adef7514f22b4554542a8c5f5f720d3abf305433
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        prefix: msj-test-vcpkg-cache
 
     - name: Create build directory
       run: cmake -E make_directory ${{github.workspace}}/build
