@@ -4,7 +4,6 @@ on:
   push:
   pull_request:
 
-
 jobs:
   build:
     strategy:
@@ -13,65 +12,37 @@ jobs:
     
     runs-on: ${{ matrix.os }}
 
-    env: 
-      USERNAME: magnesj
-      VCPKG_EXE: ${{ github.workspace }}/vcpkg/vcpkg${{ matrix.os == 'windows-latest' && '.exe' || '' }}
-      FEED_URL: https://nuget.pkg.github.com/ceetronsolutions/index.json
-      VCPKG_BINARY_SOURCES: "clear;nuget,https://nuget.pkg.github.com/ceetronsolutions/index.json,readwrite"
-
     steps:
     - uses: actions/checkout@v3
       with:
         submodules: recursive
-    
+   
     - name: Bootstrap vcpkg
-      if: runner.os == 'Windows'
+      if: runner.os == 'Windows1'
       run: |
         cd vcpkg
         ./bootstrap-vcpkg.bat
-        # echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV
 
     - name: Bootstrap vcpkg (Linux)
-      if: runner.os == 'Linux'
+      if: runner.os == 'Linux1'
       run: |
         cd vcpkg
         ./bootstrap-vcpkg.sh
-        # echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV        
-        sudo apt install mono-complete
     
-    - name: Configure NuGet for binary caching (Linux)
-      if: runner.os == 'Linux'
-      run: |
-        mono `${{ env.VCPKG_EXE }} fetch nuget | tail -n 1` \
-          sources add \
-          -Source "${{ env.FEED_URL }}" \
-          -StorePasswordInClearText \
-          -Name GitHubPackages \
-          -UserName "${{ env.USERNAME }}" \
-          -Password "${{ secrets.GH_PACKAGES_TOKEN }}"
-        mono `${{ env.VCPKG_EXE }} fetch nuget | tail -n 1` \
-          setapikey "${{ secrets.GH_PACKAGES_TOKEN }}" \
-          -Source "${{ env.FEED_URL }}"
-        
-    - name: Add NuGet sources (Windows)
-      if: runner.os == 'Windows'
-      shell: pwsh
-      run: |
-        .$(${{ env.VCPKG_EXE }} fetch nuget) `
-          sources add `
-          -Source "${{ env.FEED_URL }}" `
-          -StorePasswordInClearText `
-          -Name GitHubPackages `
-          -UserName "${{ env.USERNAME }}" `
-          -Password "${{ secrets.GH_PACKAGES_TOKEN }}"
-        .$(${{ env.VCPKG_EXE }} fetch nuget) `
-          setapikey "${{ secrets.GH_PACKAGES_TOKEN }}" `
-          -Source "${{ env.FEED_URL }}"
-          
+    - name: Restore vcpkg cache
+      id: vcpkg-cache
+      uses: magnesj/vcpkg-cache@msj-take-02
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        prefix: msj-test-vcpkg-cache-${{ runner.os }}
+
     - name: Create build directory
       run: cmake -E make_directory ${{github.workspace}}/build
       
     - name: Configure CMake
+      env:
+        VCPKG_FEATURE_FLAGS: "binarycaching" # Possibly redundant, but explicitly sets the binary caching feature flag
+        VCPKG_BINARY_SOURCES: "clear;files,${{ steps.vcpkg-cache.outputs.path }},readwrite"
       working-directory: ${{github.workspace}}/build
       run: cmake ${{github.workspace}} -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
       
