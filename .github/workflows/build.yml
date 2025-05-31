@@ -18,13 +18,13 @@ jobs:
         submodules: recursive
    
     - name: Bootstrap vcpkg
-      if: runner.os == 'Windows'
+      if: runner.os == 'Windows1'
       run: |
         cd vcpkg
         ./bootstrap-vcpkg.bat
 
     - name: Bootstrap vcpkg (Linux)
-      if: runner.os == 'Linux'
+      if: runner.os == 'Linux1'
       run: |
         cd vcpkg
         ./bootstrap-vcpkg.sh
